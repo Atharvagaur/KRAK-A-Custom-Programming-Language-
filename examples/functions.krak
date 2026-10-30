@@ -1,0 +1,17 @@
+# functions.krak -- FUNC / RETURN / recursion
+FUNC add(a, b) {
+    RETURN a + b!
+}
+
+FUNC factorial(n) {
+    WHEN (n <= 1) {
+        RETURN 1!
+    }
+    RETURN n * factorial(n - 1)!
+}
+
+MAKE $sum = add(3, 4)!
+SAY $sum!
+
+MAKE $fact = factorial(5)!
+SAY $fact!

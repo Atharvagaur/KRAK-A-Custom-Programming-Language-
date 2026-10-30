@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KRAK — Visual Compiler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wordmark">
+    <span class="bolt">&#9889;</span>
+    <span class="word">KRAK</span>
+    <span class="tagline">visual compiler</span>
+  </div>
+  <div class="examples">
+    <label for="example-select">load example</label>
+    <select id="example-select">
+      <option value="">— choose —</option>
+      {% for name in examples.keys() %}
+        <option value="{{ name }}">{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="header-status"><span class="pulse"></span><span id="exec-status">not compiled</span></div>
+</header>
+
+<div class="rail-wrap">
+  <div class="rail" id="pipeline-rail">
+    <div class="rail-line"></div>
+    <div class="rail-node" data-stage="lexer"><span class="dot"></span><span class="label">LEX</span></div>
+    <div class="rail-node" data-stage="parser"><span class="dot"></span><span class="label">PARSE</span></div>
+    <div class="rail-node" data-stage="semantic"><span class="dot"></span><span class="label">SEM</span></div>
+    <div class="rail-node" data-stage="ir"><span class="dot"></span><span class="label">IR</span></div>
+    <div class="rail-node" data-stage="optimizer"><span class="dot"></span><span class="label">OPT</span></div>
+    <div class="rail-node" data-stage="bytecode"><span class="dot"></span><span class="label">BC</span></div>
+    <div class="rail-node" data-stage="vm"><span class="dot"></span><span class="label">VM</span></div>
+  </div>
+</div>
+
+<div class="debug-toolbar">
+  <button id="compile-btn" class="primary">compile</button>
+  <button id="run-btn" disabled>run</button>
+  <button id="play-btn" disabled>play</button>
+  <button id="pause-btn" disabled>pause</button>
+  <button id="step-back-btn" disabled title="Step backward">&#9664;</button>
+  <button id="step-btn" disabled title="Step forward">&#9654; step</button>
+  <button id="reset-btn" disabled>reset</button>
+  <button id="stop-btn" disabled>stop</button>
+  <label class="optimization-toggle"><input id="optimize-toggle" type="checkbox" checked> optimize</label>
+  <label class="optimization-toggle"><input id="cfg-opt-toggle" type="checkbox" checked> control-flow passes</label>
+  <span class="toolbar-divider"></span>
+  <label class="speed-control" for="speed-select">execution speed</label>
+  <select id="speed-select" aria-label="Execution speed"><option value="700">slow</option><option value="300" selected>normal</option><option value="90">fast</option></select>
+  <span id="status" class="status"></span>
+</div>
+
+<main class="layout">
+  <section class="panel source-panel">
+    <div class="panel-head">
+      <span>source</span>
+      <span class="rule-badge" title="String literals must be written BACKWARDS in KRAK source.">mirror string rule active</span>
+    </div>
+    <div class="source-editor-wrap">
+      <div id="source-gutter" aria-hidden="true"></div>
+      <textarea id="source" spellcheck="false" aria-label="KRAK source editor">{{ default_source }}</textarea>
+    </div>
+  </section>
+
+  <section class="panel stage-panel">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="tokens">tokens</button>
+      <button class="tab" data-tab="ast">AST</button>
+      <button class="tab" data-tab="symbols">symbol table</button>
+      <button class="tab" data-tab="ir">IR</button>
+      <button class="tab" data-tab="optimized">optimized IR</button>
+      <button class="tab" data-tab="bytecode">bytecode</button>
+    </div>
+
+    <div class="tab-body">
+      <div class="tab-panel active" id="panel-tokens">
+        <table class="data-table" id="tokens-table">
+          <thead><tr><th>type</th><th>value</th><th>line</th><th>col</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="tab-panel" id="panel-ast">
+        <pre class="code-block" id="ast-view"></pre>
+      </div>
+
+      <div class="tab-panel" id="panel-symbols">
+        <table class="data-table" id="symbols-table">
+          <thead><tr><th>name</th><th>type</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="tab-panel" id="panel-ir">
+        <pre class="code-block" id="ir-before-view"></pre>
+      </div>
+
+      <div class="tab-panel" id="panel-optimized">
+        <pre class="code-block" id="ir-after-view"></pre>
+        <div class="notes" id="optimizer-notes"></div>
+      </div>
+
+      <div class="tab-panel" id="panel-bytecode">
+        <div id="bytecode-view"></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel runtime-panel">
+    <div class="runtime-head"><div><span class="eyebrow">LIVE MACHINE</span><h2>Execution state</h2></div><span class="step-badge" id="step-badge">step 0</span></div>
+    <div class="machine-meta"><span>IP</span><strong id="ip-view">—</strong><span>instruction</span><strong id="current-op">waiting for compile</strong></div>
+    <section class="runtime-section">
+      <div class="section-title"><span>operand stack</span><span id="stack-depth">0 values</span></div>
+      <div id="stack-view" class="stack-view"><div class="empty-runtime">Compile a program to begin.</div></div>
+    </section>
+    <section class="runtime-section variables-section">
+      <div class="section-title"><span>variables</span><span id="frame-label">main</span></div>
+      <div id="variables-view" class="variables-view"><div class="empty-runtime">No active variables.</div></div>
+    </section>
+    <section class="runtime-section calls-section">
+      <div class="section-title"><span>call frames</span><span id="frame-count">0</span></div>
+      <div id="frames-view" class="frames-view"><div class="empty-runtime">No calls yet.</div></div>
+    </section>
+  </aside>
+</main>
+
+<section class="panel cfg-panel">
+  <div class="panel-head"><span>control flow graph</span><div class="cfg-controls">
+    <button id="cfg-original-btn" class="selected">original</button><button id="cfg-optimized-btn">optimized</button>
+    <button id="cfg-fit-btn" title="Fit graph to view">fit</button>
+  </div></div>
+  <div id="cfg-legend"><span><i class="legend-entry"></i> entry</span><span><i class="legend-active"></i> active</span><span><i class="legend-visited"></i> visited</span><span>green = true · red = false</span><span>dynamic VM instructions: <b id="vm-dynamic-count">0</b></span></div>
+  <div class="cfg-canvas-wrap" id="cfg-canvas-wrap"><svg id="cfg-svg" role="img" aria-label="Control flow graph"></svg></div>
+  <div id="cfg-details" class="cfg-details">Compile a program to inspect its basic blocks and control flow.</div>
+</section>
+
+<section class="lower-grid">
+  <div class="panel history-panel">
+    <div class="panel-head"><span>execution timeline</span><span id="history-count">0 events</span></div>
+    <div id="history-view" class="history-view"><div class="empty-runtime">Instruction events will appear here.</div></div>
+  </div>
+  <div class="panel console-panel">
+    <div class="panel-head"><span>program output</span><span id="output-count">0 lines</span></div>
+    <pre id="output" class="output"><span class="console-placeholder">Output appears when PRINT instructions execute.</span></pre>
+    <div id="runtime-error" class="runtime-error" hidden></div>
+  </div>
+</section>
+
+<script>
+  window.KRAK_EXAMPLES = {{ examples | tojson }};
+</script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

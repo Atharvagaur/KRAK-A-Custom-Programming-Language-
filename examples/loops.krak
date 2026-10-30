@@ -1,0 +1,6 @@
+# loops.krak -- REPEAT (while-style loop)
+MAKE $i = 0!
+REPEAT ($i < 5) {
+    SAY $i!
+    $i = $i + 1!
+}

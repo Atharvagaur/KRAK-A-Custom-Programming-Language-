@@ -1,0 +1,3 @@
+# hello.krak -- basic SAY + the Mirror String Rule in action.
+# String literals are written BACKWARDS in KRAK source.
+SAY "olleH ,dlroW"!

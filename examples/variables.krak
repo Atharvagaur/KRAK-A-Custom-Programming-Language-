@@ -1,0 +1,8 @@
+# variables.krak -- declarations, arithmetic, reassignment.
+MAKE $x = 10!
+MAKE $y = 20!
+MAKE $z = $x + $y * 2!
+SAY $z!
+
+$x = $x + 1!
+SAY $x!

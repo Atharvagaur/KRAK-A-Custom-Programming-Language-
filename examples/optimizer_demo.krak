@@ -1,0 +1,7 @@
+# optimizer_demo.krak -- shows constant folding / propagation / dead-store elim.
+MAKE $a = 10 + 20 * 2!
+MAKE $b = $a + 0!
+MAKE $c = 5!
+$c = 99!
+SAY $b!
+SAY $c!

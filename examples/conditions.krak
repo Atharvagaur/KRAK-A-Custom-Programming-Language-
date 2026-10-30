@@ -1,0 +1,9 @@
+# conditions.krak -- WHEN / OTHERWISE
+MAKE $age = 20!
+
+WHEN ($age >= 18) {
+    SAY "tludA"!
+}
+OTHERWISE {
+    SAY "roniM"!
+}
